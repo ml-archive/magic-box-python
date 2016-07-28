@@ -38,4 +38,5 @@ def parse_qsl_with_brackets(qs_lists):
             # Move current cursor
             current = current[key]
 
+    print(parsed_params)
     return parsed_params
