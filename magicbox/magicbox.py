@@ -1,6 +1,3 @@
-from django.db.models import Prefetch
-
-
 class DjangoFiltersFactory:
     supported_tokens = {
         '^': ('__startswith', 'filter'),
@@ -211,33 +208,55 @@ class DjangoRepository:
 class DjangoIncludeFactory:
     # @TODO this should be applied via a config.
     RELATION_DELIMITER = '.'
-    RELATION_JOINER = '__'
+    RELATION_GLUE = '__'
 
     def __init__(self, model):
         self.model = model
 
-    def parse_include(self, include_chain):
+    def parse_include(self, relation_chain):
         """
-        Parses an include chain and formats into and returns Takes a specific include chain that
-        :param include_chain:
+        Parses a relationship chain and formats into a valid django format.
+        Relationships are validated. Relationship's that do not exist will break
+        the chain and only the prior valid relationships will be returned.
+
+        Relationship chains are delimited strings, ex: 'author.articles.comments'
+
+        In the example above if `articles` was an invalid relationship then only
+        the author relationship would be returned.
+
+        Params:
+            relation_chain (str) - A delimited string representing a relationship chain.
+
+        Returns:
+            str - Either an empty string if all relationships were invalid. Or a relationship chain.
+
+        :param relation_chain:
         :return:
         """
         from django.core.exceptions import FieldDoesNotExist
 
         relation_list = []
 
+        # Start cursor
         current_model = self.model
 
-        for related in include_chain.split(self.RELATION_DELIMITER):
+        # We split the chain by it's delimiter, verifying each relation as we
+        # move the model cursor down the chain. In the end we join the valid
+        # list of relations, creating a new valid relation chain.
+        for related in relation_chain.split(self.RELATION_DELIMITER):
+
             try:
                 current_model = current_model._meta.get_field(related).related_model
-                relation_list.append(related)
-            except FieldDoesNotExist:
-                return self.RELATION_JOINER.join(relation_list)
 
-        return self.RELATION_JOINER.join(relation_list)
+                relation_list.append(related)
+
+            except FieldDoesNotExist:
+                return self.RELATION_GLUE.join(relation_list)
+
+        return self.RELATION_GLUE.join(relation_list)
 
     def build_prefetch_list(self, includes):
+        from django.db.models import Prefetch
 
         prefetch_list = []
 
