@@ -13,7 +13,7 @@ VERSION = '0.1'
 DESCRIPTION = "A not so magical repository pattern with support for Django, SQLAlchemy (coming soon). And some pre-built middleware to make it ready out of the box."
 
 class TestCommand(Command):
-    nose_args = []
+    nose_args = ['--with-coverage', '--cover-package=magicbox']
     user_options = []
 
     # If we run test just pass all arguments over to nosetest

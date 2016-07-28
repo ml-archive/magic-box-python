@@ -1,0 +1,1 @@
+from tests import MagicBoxTestCase as TestCase

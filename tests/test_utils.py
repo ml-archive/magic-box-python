@@ -1,11 +1,9 @@
 from django.http.request import QueryDict
 from magicbox.utils import parse_qsl_with_brackets
+from tests import MagicBoxTestCase as TestCase
 
 
-class TestParsesQueryStringListWithBrackets:
-    def assertEqual(self, valone, valtwo):
-        assert valone == valtwo
-
+class TestParsesQueryStringListWithBrackets(TestCase):
     def test_can_parse_single_query_string(self):
         qs = 'filters[name]==kirill'
         query_list = QueryDict(qs, encoding='utf-8').lists()
