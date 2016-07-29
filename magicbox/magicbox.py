@@ -1,3 +1,4 @@
+from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Q
 
 
@@ -141,8 +142,12 @@ class DjangoLimiterFactory:
         query_set = self.query_set
 
         for column, limiter in filters.items():
-            method, token, value = self.determine_limiter(limiter)
-            limiters[method][column + token] = value
+            try:
+                self.query_set.model._meta.get_field(column)
+                method, token, value = self.determine_limiter(limiter)
+                limiters[method][column + token] = value
+            except FieldDoesNotExist:
+                pass
 
         if limiters['filter']:
             query_set = query_set.filter(**limiters['filter'])
@@ -153,10 +158,6 @@ class DjangoLimiterFactory:
         return query_set
 
     def construct_complex_query_set(self, filters):
-
-        # @TODO Need to filter out invalid fields...
-        # from django.core.exceptions import FieldDoesNotExist
-
         query_dict = self.recursive_queries(filters, filters)
 
         q = self.q
@@ -188,12 +189,16 @@ class DjangoLimiterFactory:
                 current = current[k]
                 new_tree[k] = self.recursive_queries(v, current)
             else:
-                method, token, value = self.determine_limiter(v)
+                try:
+                    self.query_set.model._meta.get_field(k)
+                    method, token, value = self.determine_limiter(v)
 
-                if method == 'filter':
-                    apply[k + token] = value
-                if method == 'exclude':
-                    negate[k + token] = value
+                    if method == 'filter':
+                        apply[k + token] = value
+                    if method == 'exclude':
+                        negate[k + token] = value
+                except FieldDoesNotExist:
+                    pass
 
         if apply and negate:
             new_tree['q'] = Q(**apply) & ~Q(**negate)
