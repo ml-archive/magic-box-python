@@ -1,5 +1,48 @@
 from django.core.exceptions import FieldDoesNotExist
+from django.db.models import Avg, Max, Min, Sum, Count
 from django.db.models import Q
+
+
+class DjangoAggregatorFactory:
+    supported_aggregations = [
+        'avg',
+        'max',
+        'min',
+        'sum',
+        'count',
+    ]
+
+    def __init__(self, model):
+        self.model = model
+
+    def construct_aggregator(self, aggregation):
+        operation, field = aggregation.popitem()
+
+        if self.has_field(field):
+            return self.determine_aggregator(operation, field)
+
+        return False
+
+    def has_field(self, field):
+        try:
+            self.model._meta.get_field(field)
+            return True
+        except FieldDoesNotExist:
+            return False
+
+    def determine_aggregator(self, operation, field):
+        if operation == 'count':
+            return Count(field)
+        elif operation == 'sum':
+            return Sum(field)
+        elif operation == 'avg':
+            return Avg(field)
+        elif operation == 'max':
+            return Max(field)
+        elif operation == 'min':
+            return Min(field)
+
+        return False
 
 
 class DjangoIncludeFactory:
@@ -222,6 +265,36 @@ class DjangoLimiterFactory:
         return self.construct_complex_query_set(filters)
 
 
+class DjangoSorterFactory:
+    supported_sorters = {
+        'asc': '',
+        'desc': '-'
+    }
+
+    def __init__(self, query_set):
+        self.query_set = query_set
+
+    def construct_order_by(self, sort_orders):
+        order_by = []
+
+        for field, direction in sort_orders.items():
+            if self.has_field(field):
+                ops = self.determine_operation(direction)
+                order_by.append(ops + field)
+
+        return order_by
+
+    def determine_operation(self, direction):
+        return self.supported_sorters.get(direction.lower())
+
+    def has_field(self, field):
+        try:
+            self.query_set.model._meta.get_field(field)
+            return True
+        except FieldDoesNotExist:
+            return field in list(self.query_set.query.annotation_select)
+
+
 class DjangoRepository:
     """
     Some TODOs:
@@ -237,6 +310,16 @@ class DjangoRepository:
         self.query_set = None
         self.input = {}
         self.fillable = []
+        self.aggregate = {}
+        self.sort_order = {}
+
+    def set_sort_order(self, sort_order):
+        self.sort_order = sort_order
+        return self
+
+    def set_aggregate(self, aggregate):
+        self.aggregate = aggregate
+        return self
 
     def set_input(self, inputdict):
         self.input = inputdict
@@ -286,12 +369,13 @@ class DjangoRepository:
     def _modify_query(self):
         filters = self.filters
         includes = self.includes
+        aggregate = self.aggregate
+        sort_orders = self.sort_order
 
         query_set = self.model.objects.get_queryset()
 
         if filters:
             query_set = DjangoLimiterFactory(query_set).construct_query_set(filters)
-            print(query_set.query)  # @TODO temp, debugging...
 
         # If has relations to include pass to factory.
         if includes:
@@ -301,9 +385,16 @@ class DjangoRepository:
         # APPLY Group by methods if exists
 
         # APPLY Aggregate Methods if exists
+        if aggregate:
+            aggregation = DjangoAggregatorFactory(self.model).construct_aggregator(aggregate)
+            if aggregation:
+                query_set = query_set.annotate(aggregation)
 
         # APPLY Sort method if exists
+        if sort_orders:
+            query_set = query_set.order_by(*DjangoSorterFactory(query_set).construct_order_by(sort_orders))
 
+        print(query_set.query)  # @TODO temp, debugging...
         return query_set
 
     def all(self):
