@@ -326,6 +326,12 @@ class DjangoRepository:
         except self.model.DoesNotExist:
             return False
 
+    def find(self, pk):
+        try:
+            return self.query().get(pk=pk)
+        except self.model.DoesNotExist:
+            return False
+
     def execute(self):
         # @TODO
         # iterate over all query sets to execute them and return results.
