@@ -303,10 +303,9 @@ class DjangoRepository:
     """
 
     def __init__(self, model):
-        self.model = None
+        self.model = model
         self.filters = {}
         self.includes = []
-        self.set_model(model)
         self.query_set = None
         self.input = {}
         self.fillable = []
@@ -400,6 +399,34 @@ class DjangoRepository:
     def all(self):
         return self.query().all()
 
+    def save(self):
+        pass
+
+    def update(self):
+        pass
+
+    def _has_field(self, field):
+        try:
+            self.model._meta.get_field(field)
+            return True
+        except FieldDoesNotExist:
+            return False
+
+    def fill(self, instance):
+        for field, value in self.input.items():
+            if self._has_field(field):
+                setattr(instance, field, value)
+
+        instance.save()
+
+    def create(self):
+        instance = self.model()
+        self.fill(instance)
+        return instance
+
+    # def save(self):
+    #     pass
+
     def delete(self, pk=None):
         if pk:
             return self.delete_one(pk)
@@ -423,10 +450,10 @@ class DjangoRepository:
         except self.model.DoesNotExist:
             return False
 
-    def execute(self):
-        # @TODO
-        # iterate over all query sets to execute them and return results.
-        pass
+    # def execute(self):
+    #     # @TODO maybe??
+    #     # iterate over all query sets to execute them and return results.
+    #     pass
 
     def _check_relation(self):
         pass
