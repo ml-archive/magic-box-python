@@ -68,6 +68,11 @@ class DjangoIncludeFactory:
 
 
 class DjangoLimiterFactory:
+    """
+    Some TODOs:
+    Add filtering across relationship chain: https://docs.djangoproject.com/en/1.9/topics/db/queries/#lookups-that-span-relationships
+    All __in filters need to be properly parsed. Currently they will fail to parse correctly.
+    """
     supported_tokens = {
         '^': ('__startswith', 'filter'),
         '~': ('__contains', 'filter'),
@@ -218,12 +223,28 @@ class DjangoLimiterFactory:
 
 
 class DjangoRepository:
+    """
+    Some TODOs:
+    Depth Restriction for limiter statements and includes...
+    Convert Setters/Getters to whatever is the "pythonic way"
+    """
+
     def __init__(self, model):
         self.model = None
         self.filters = {}
         self.includes = []
         self.set_model(model)
         self.query_set = None
+        self.input = {}
+        self.fillable = []
+
+    def set_input(self, inputdict):
+        self.input = inputdict
+        return self
+
+    def set_fillable(self, fillable):
+        self.fillable = fillable
+        return self
 
     def set_model(self, model):
         """
@@ -277,38 +298,38 @@ class DjangoRepository:
             # @TODO right now this passes back a list for the prefetch object. LimiterFactory and IncludeFactory should work the same way for consistency sake.
             query_set = query_set.prefetch_related(*DjangoIncludeFactory(self.model).build_prefetch_list(includes))
 
-        return query_set
-
-        # NOTES:
-        # print(test)
-        # for filter in filter_tuple_list:
-        #     if filter[1] is '=':
-        #         query.filter()
-        # print(query.values())
-        # APPLY Filters
-        # if filters_exist:
-        #  # Apply depth restrictions to each filter
-        # for (filter, value) in filters:
-        #  # Filters deeper than the depth restriction + 1 are not allowed
-        #  # Depth restriction is offset by 1 because filters terminate with a column
-        #  # i.e. 'users.posts.title' => '=Great Post' but the depth we expect is 'users.posts'
-        # if (count(explode(self::GLUE, $filter)) > ($this->getDepthRestriction() + 1)) {
-        #                                                                               // Unset the disallowed filter
-        # unset($filters[$filter]);
-        # }
-        # }
-        #
-        # Filter::applyQueryFilters($query, $filters, $columns, $temp_instance->getTable());
-        # }
-
         # APPLY Group by methods if exists
 
         # APPLY Aggregate Methods if exists
 
         # APPLY Sort method if exists
 
-    def _check_relation(self):
-        pass
+        return query_set
 
     def all(self):
         return self.query().all()
+
+    def delete(self, pk=None):
+        if pk:
+            return self.delete_one(pk)
+
+        deleted = self.query().delete()
+
+        if deleted[0]:
+            return deleted
+        else:
+            return False
+
+    def delete_one(self, pk):
+        try:
+            return self.model.objects.get(pk=pk).delete()
+        except self.model.DoesNotExist:
+            return False
+
+    def execute(self):
+        # @TODO
+        # iterate over all query sets to execute them and return results.
+        pass
+
+    def _check_relation(self):
+        pass
