@@ -6,10 +6,14 @@ from magicbox.magicbox.utils import parse_qsl_with_brackets
 import json
 
 
+# @TODO COMMENTS!!!!
 def resource(model):
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
+            # @TODO this should decode differently... It should decode based on a setting var.
+            # @TODO add support for Django rest framework. Before trying to decode it your self, see if the `data`
+            # attr exists on the request. If it does, use it instead. If it doesn't then manually decode.
             body = json.loads(request.body.decode('utf-8'))
             query_params = parse_qsl_with_brackets(request.GET.lists())
             repository = DjangoRepository(model) \
