@@ -1,6 +1,27 @@
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Avg, Max, Min, Sum, Count
 from django.db.models import Q
+from functools import wraps
+from magicbox.magicbox.utils import parse_qsl_with_brackets
+import json
+
+
+def resource(model):
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped_view(request, *args, **kwargs):
+            body = json.loads(request.body.decode('utf-8'))
+            query_params = parse_qsl_with_brackets(request.GET.lists())
+            repository = DjangoRepository(model) \
+                .set_input(body) \
+                .set_filters(query_params.get('filters')) \
+                .set_includes(query_params.get('include')) \
+                .set_aggregate(query_params.get('aggregate')) \
+                .set_sort_order(query_params.get('sort'))
+
+            return view_func(request, repository, *args, **kwargs)
+        return _wrapped_view
+    return decorator
 
 
 class DjangoAggregatorFactory:
