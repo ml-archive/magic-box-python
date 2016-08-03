@@ -1,0 +1,1 @@
+from tests.django import MagicBoxTestCase as TestCase
