@@ -11,7 +11,6 @@ class DjangoIncludeFactory:
     """
     The include factory constructs
     """
-    # @TODO this should be applied via a config.
     RELATION_DELIMITER = RELATION_DELIMITER
     RELATION_GLUE = '__'
 
@@ -61,13 +60,28 @@ class DjangoIncludeFactory:
         return self.RELATION_GLUE.join(relation_list)
 
     def build_prefetch_list(self, includes):
+        """
+        Returns a list of Prefetch objects for each valid relationship chain in the includes list.
+        If there are no valid relationship chains then an empty list is returned.
+
+        Params:
+            includes (list) - A list of strings representing a relationship chain.
+
+        Returns:
+            list - Either an empty list if all relationships were invalid. Or a list of Prefetch objects.
+
+        :param includes:
+        :return:
+        """
         from django.db.models import Prefetch
 
         prefetch_list = []
 
+        # Parse through the list of relationship chains.
         for include in includes:
             include = self.parse_include(include)
 
+            # If a relationship chain was valid we add it to the list.
             if include is not '':
                 p = Prefetch(include)
                 prefetch_list.append(p)
