@@ -14,6 +14,7 @@ class TestDjangoIncludeFactory(TestCase):
         Tests if factory can be initialized.
         """
         instance = self.factory(Person)
+
         self.assertIsInstance(instance, self.factory)
 
     def test_simple_can_parse_include(self):
@@ -32,6 +33,7 @@ class TestDjangoIncludeFactory(TestCase):
         instance = self.factory(Person)
         relationship_presentation = 'articles' + instance.RELATION_DELIMITER + 'comments'
         includes = instance.parse_include(relationship_presentation)
+
         self.assertEqual(includes, 'articles' + instance.RELATION_GLUE + 'comments')
         self.assertIsInstance(includes, str)
 
@@ -51,6 +53,7 @@ class TestDjangoIncludeFactory(TestCase):
         instance = self.factory(Person)
         relationship_presentation = 'not_a_real' + instance.RELATION_DELIMITER + 'relationship'
         includes = instance.parse_include(relationship_presentation)
+
         self.assertEqual(includes, '')
         self.assertIsInstance(includes, str)
 
@@ -70,6 +73,7 @@ class TestDjangoIncludeFactory(TestCase):
         instance = self.factory(Person)
         relationship_presentation = 'articles' + instance.RELATION_DELIMITER + 'invalid_relationship'
         includes = instance.parse_include(relationship_presentation)
+
         self.assertEqual(includes, 'articles')
         self.assertIsInstance(includes, str)
 
