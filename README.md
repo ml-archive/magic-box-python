@@ -1,3 +1,5 @@
+# Magic Box Python [![Slack Status](https://fuzz-opensource.herokuapp.com/badge.svg)](https://fuzz-opensource.herokuapp.com/)
+
 ## DEVELOPMENT
 
 ### SETUP
